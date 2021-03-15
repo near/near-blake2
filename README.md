@@ -7,7 +7,8 @@
 [![Project Chat][chat-image]][chat-link]
 [![Build Status][build-image]][build-link]
 
-Pure Rust implementation of the [BLAKE2 hash function][1] family.
+Pure Rust implementation of the [BLAKE2 hash function][1] family with changes to
+the compression function to specify an amount of rounds.
 
 [Documentation][docs-link]
 
