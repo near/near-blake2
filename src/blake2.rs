@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! blake2_impl {
     (
         $state:ident, $fix_state:ident, $word:ident, $vec:ident, $bytes:ident,

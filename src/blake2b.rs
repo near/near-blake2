@@ -1,7 +1,6 @@
 use crate::consts::BLAKE2B_IV;
 use digest::generic_array::typenum::{U128, U64};
 
-#[macro_export]
 blake2_impl!(
     VarBlake2b,
     Blake2b,
