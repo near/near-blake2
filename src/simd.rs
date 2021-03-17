@@ -15,6 +15,9 @@ pub use self::simdty::{u32x4, u64x4};
 pub trait Vector4<T>: Copy {
     fn gather(src: &[T], i0: usize, i1: usize, i2: usize, i3: usize) -> Self;
 
+    // Usually, this should be fixed but to keep it inline with blake2 upstream,
+    // we will leave it as is for maximum compatibility.
+    #[allow(clippy::wrong_self_convention)]
     fn from_le(self) -> Self;
     fn to_le(self) -> Self;
 

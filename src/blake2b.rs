@@ -13,7 +13,6 @@ blake2_impl!(
     16,
     63,
     BLAKE2B_IV,
-    None,
     "Blake2b instance with a variable output.",
     "Blake2b instance with a fixed output.",
 );
