@@ -1,7 +1,7 @@
 macro_rules! blake2_impl {
     (
         $state:ident, $fix_state:ident, $word:ident, $vec:ident, $bytes:ident,
-        $block_size:ident, $R1:expr, $R2:expr, $R3:expr, $R4:expr, $IV:expr,
+        $block_size:ident, $R1:expr, $R2:expr, $R3:expr, $R4:expr, $IV:expr, $rounds:expr,
         $vardoc:expr, $doc:expr,
     ) => {
 
@@ -240,19 +240,32 @@ macro_rules! blake2_impl {
                     iv1() ^ $vec::new(t0, t1, f0, f1),
                 ];
 
-                round(&mut v, m, &SIGMA[0]);
-                round(&mut v, m, &SIGMA[1]);
-                round(&mut v, m, &SIGMA[2]);
-                round(&mut v, m, &SIGMA[3]);
-                round(&mut v, m, &SIGMA[4]);
-                round(&mut v, m, &SIGMA[5]);
-                round(&mut v, m, &SIGMA[6]);
-                round(&mut v, m, &SIGMA[7]);
-                round(&mut v, m, &SIGMA[8]);
-                round(&mut v, m, &SIGMA[9]);
-                if $bytes::to_u8() == 64 {
+                if let Some(rounds) = $rounds {
+                    for x in 0..rounds {
+                        let x = if x > 9 {
+                            x - 9
+                        } else {
+                            x
+                        };
+
+                        round(&mut v, m, &SIGMA[x]);
+                    }
+                } else {
                     round(&mut v, m, &SIGMA[0]);
                     round(&mut v, m, &SIGMA[1]);
+                    round(&mut v, m, &SIGMA[2]);
+                    round(&mut v, m, &SIGMA[3]);
+                    round(&mut v, m, &SIGMA[4]);
+                    round(&mut v, m, &SIGMA[5]);
+                    round(&mut v, m, &SIGMA[6]);
+                    round(&mut v, m, &SIGMA[7]);
+                    round(&mut v, m, &SIGMA[8]);
+                    round(&mut v, m, &SIGMA[9]);
+
+                    if $bytes::to_u8() == 64 {
+                        round(&mut v, m, &SIGMA[0]);
+                        round(&mut v, m, &SIGMA[1]);
+                    }
                 }
 
                 h[0] = h[0] ^ (v[0] ^ v[2]);

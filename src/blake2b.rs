@@ -1,6 +1,7 @@
 use crate::consts::BLAKE2B_IV;
 use digest::generic_array::typenum::{U128, U64};
 
+#[macro_export]
 blake2_impl!(
     VarBlake2b,
     Blake2b,
@@ -13,6 +14,7 @@ blake2_impl!(
     16,
     63,
     BLAKE2B_IV,
+    None,
     "Blake2b instance with a variable output.",
     "Blake2b instance with a fixed output.",
 );
