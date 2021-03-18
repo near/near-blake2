@@ -27,8 +27,6 @@ macro_rules! blake2_impl {
             h0: [$vec; 2],
             m0: [$word; 16],
             t0: u64,
-
-            rounds: Option<usize>,
         }
 
         #[inline(always)]
@@ -73,14 +71,49 @@ macro_rules! blake2_impl {
             unshuffle(v);
         }
 
+        /// The compression function of the blake2 algorithm.
+        ///
+        /// Takes as an argument the state vector "h", message block vector "m"
+        /// (the last block is padded with zeros to full block size, if
+        /// required), 2w-bit offset counter "t", and final block indicator flag
+        /// "f". Local vector v[0..15] is used in processing. F returns a new
+        /// state vector. The number of rounds, "r", is 12 for BLAKE2b and 10
+        /// for BLAKE2s. Rounds are numbered from 0 to r - 1.
+        pub fn f(rounds: u32, h: [$word; 8], m: [$word; 16], t: [$word; 2], f: bool) -> [$word; 8] {
+            use $crate::consts::SIGMA;
+            let mut h: [$vec; 2] = [
+                $vec::new(h[0], h[1], h[2], h[3]),
+                $vec::new(h[4], h[5], h[6], h[7]),
+            ];
+
+            let (f0, f1) = if f { (!0, 0) } else { (0, 0) };
+
+            let (t0, t1) = (t[0], t[1]);
+
+            let mut v = [h[0], h[1], iv0(), iv1() ^ $vec::new(t0, t1, f0, f1)];
+
+            for x in 1..rounds + 1 {
+                let x = if x > 10 { x - 11 } else { x - 1 };
+                round(&mut v, &m, &SIGMA[x as usize]);
+            }
+
+            h[0] = h[0] ^ (v[0] ^ v[2]);
+            h[1] = h[1] ^ (v[1] ^ v[3]);
+
+            let out = [
+                h[0].0, h[0].1, h[0].2, h[0].3, h[1].0, h[1].1, h[1].2, h[1].3,
+            ];
+            out
+        }
+
         impl $state {
             /// Creates a new hashing context with a key.
             ///
             /// **WARNING!** If you plan to use it for variable output MAC, then
             /// make sure to compare codes in constant time! It can be done
             /// for example by using `subtle` crate.
-            pub fn new_keyed(key: &[u8], output_size: usize, rounds: Option<usize>) -> Self {
-                Self::with_params(key, &[], &[], output_size, rounds)
+            pub fn new_keyed(key: &[u8], output_size: usize) -> Self {
+                Self::with_params(key, &[], &[], output_size)
             }
 
             /// Creates a new hashing context with the full set of sequential-mode parameters.
@@ -89,7 +122,6 @@ macro_rules! blake2_impl {
                 salt: &[u8],
                 persona: &[u8],
                 output_size: usize,
-                rounds: Option<usize>,
             ) -> Self {
                 let kk = key.len();
                 assert!(kk <= $bytes::to_usize());
@@ -152,7 +184,6 @@ macro_rules! blake2_impl {
 
                 state.t0 = state.t;
                 state.m0 = state.m;
-                state.rounds = rounds;
                 state
             }
 
@@ -177,16 +208,6 @@ macro_rules! blake2_impl {
                     t0: 0,
                     m0: [0; 16],
                     h0,
-
-                    rounds: None,
-                }
-            }
-
-            /// Crates a new hasher with a set amount of compression rounds.
-            pub fn with_rounds(rounds: usize) -> Self {
-                $state {
-                    rounds: Some(rounds),
-                    ..Default::default()
                 }
             }
 
@@ -270,28 +291,20 @@ macro_rules! blake2_impl {
 
                 let mut v = [h[0], h[1], iv0(), iv1() ^ $vec::new(t0, t1, f0, f1)];
 
-                if let Some(rounds) = self.rounds {
-                    for x in 1..rounds + 1 {
-                        let x = if x > 10 { x - 10 - 1 } else { x - 1 };
+                round(&mut v, m, &SIGMA[0]);
+                round(&mut v, m, &SIGMA[1]);
+                round(&mut v, m, &SIGMA[2]);
+                round(&mut v, m, &SIGMA[3]);
+                round(&mut v, m, &SIGMA[4]);
+                round(&mut v, m, &SIGMA[5]);
+                round(&mut v, m, &SIGMA[6]);
+                round(&mut v, m, &SIGMA[7]);
+                round(&mut v, m, &SIGMA[8]);
+                round(&mut v, m, &SIGMA[9]);
 
-                        round(&mut v, m, &SIGMA[x]);
-                    }
-                } else {
+                if $bytes::to_u8() == 64 {
                     round(&mut v, m, &SIGMA[0]);
                     round(&mut v, m, &SIGMA[1]);
-                    round(&mut v, m, &SIGMA[2]);
-                    round(&mut v, m, &SIGMA[3]);
-                    round(&mut v, m, &SIGMA[4]);
-                    round(&mut v, m, &SIGMA[5]);
-                    round(&mut v, m, &SIGMA[6]);
-                    round(&mut v, m, &SIGMA[7]);
-                    round(&mut v, m, &SIGMA[8]);
-                    round(&mut v, m, &SIGMA[9]);
-
-                    if $bytes::to_u8() == 64 {
-                        round(&mut v, m, &SIGMA[0]);
-                        round(&mut v, m, &SIGMA[1]);
-                    }
                 }
 
                 h[0] = h[0] ^ (v[0] ^ v[2]);
@@ -301,7 +314,7 @@ macro_rules! blake2_impl {
 
         impl Default for $state {
             fn default() -> Self {
-                Self::new_keyed(&[], $bytes::to_usize(), None)
+                Self::new_keyed(&[], $bytes::to_usize())
             }
         }
 
@@ -320,7 +333,7 @@ macro_rules! blake2_impl {
                 if output_size == 0 || output_size > $bytes::to_usize() {
                     return Err(InvalidOutputSize);
                 }
-                Ok(Self::new_keyed(&[], output_size, None))
+                Ok(Self::new_keyed(&[], output_size))
             }
 
             fn output_size(&self) -> usize {
@@ -353,27 +366,15 @@ macro_rules! blake2_impl {
 
         impl $fix_state {
             /// Creates a new hashing context with the full set of sequential-mode parameters.
-            pub fn with_params(
-                key: &[u8],
-                salt: &[u8],
-                persona: &[u8],
-                rounds: Option<usize>,
-            ) -> Self {
-                let state = $state::with_params(key, salt, persona, $bytes::to_usize(), rounds);
-                Self { state }
-            }
-
-            /// Creates a new hashing context with default parameters and a custom number of
-            /// compression rounds.
-            pub fn with_rounds(rounds: usize) -> Self {
-                let state = $state::with_rounds(rounds);
+            pub fn with_params(key: &[u8], salt: &[u8], persona: &[u8]) -> Self {
+                let state = $state::with_params(key, salt, persona, $bytes::to_usize());
                 Self { state }
             }
         }
 
         impl Default for $fix_state {
             fn default() -> Self {
-                let state = $state::new_keyed(&[], $bytes::to_usize(), None);
+                let state = $state::new_keyed(&[], $bytes::to_usize());
                 Self { state }
             }
         }
@@ -406,7 +407,7 @@ macro_rules! blake2_impl {
             type KeySize = $bytes;
 
             fn new(key: &GenericArray<u8, $bytes>) -> Self {
-                let state = $state::new_keyed(key, $bytes::to_usize(), None);
+                let state = $state::new_keyed(key, $bytes::to_usize());
                 Self { state }
             }
 
@@ -414,7 +415,7 @@ macro_rules! blake2_impl {
                 if key.len() > $bytes::to_usize() {
                     Err(InvalidKeyLength)
                 } else {
-                    let state = $state::new_keyed(key, $bytes::to_usize(), None);
+                    let state = $state::new_keyed(key, $bytes::to_usize());
                     Ok(Self { state })
                 }
             }

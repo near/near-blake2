@@ -20,6 +20,7 @@ pub trait Vector4<T>: Copy {
     #[allow(clippy::wrong_self_convention)]
     fn from_le(self) -> Self;
     fn to_le(self) -> Self;
+    fn to_be(self) -> Self;
 
     fn wrapping_add(self, rhs: Self) -> Self;
 
@@ -82,6 +83,16 @@ macro_rules! impl_vector4 {
                     self.1.to_le(),
                     self.2.to_le(),
                     self.3.to_le(),
+                )
+            }
+
+            #[inline(always)]
+            fn to_be(self) -> Self {
+                $vec::new(
+                    self.0.to_be(),
+                    self.1.to_be(),
+                    self.2.to_be(),
+                    self.3.to_be(),
                 )
             }
 
