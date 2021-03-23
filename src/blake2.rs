@@ -79,7 +79,7 @@ macro_rules! blake2_impl {
         /// "f". Local vector v[0..15] is used in processing. F returns a new
         /// state vector. The number of rounds, "r", is 12 for BLAKE2b and 10
         /// for BLAKE2s. Rounds are numbered from 0 to r - 1.
-        pub fn f(rounds: u32, h: [$word; 8], m: [$word; 16], t: [$word; 2], f: bool) -> [$word; 8] {
+        pub fn f(rounds: u32, h: [$word; 8], m: [$word; 16], t: [$word; 2], f: bool) -> Output {
             use $crate::consts::SIGMA;
             let mut h: [$vec; 2] = [
                 $vec::new(h[0], h[1], h[2], h[3]),
@@ -100,9 +100,10 @@ macro_rules! blake2_impl {
             h[0] = h[0] ^ (v[0] ^ v[2]);
             h[1] = h[1] ^ (v[1] ^ v[3]);
 
-            let out = [
-                h[0].0, h[0].1, h[0].2, h[0].3, h[1].0, h[1].1, h[1].2, h[1].3,
-            ];
+            let buf = [h[0].to_le(), h[1].to_le()];
+            let mut out = GenericArray::default();
+            copy(buf.as_bytes(), &mut out);
+
             out
         }
 
