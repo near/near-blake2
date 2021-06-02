@@ -1,13 +1,14 @@
 [package]
-name = "blake2"
+name = "near-blake2"
 version = "0.9.1"
 description = "BLAKE2 hash functions"
-authors = ["RustCrypto Developers"]
+authors = [
+    "RustCrypto Developers",
+    "Near Inc <hello@nearprotocol.com>",
+]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 edition = "2018"
-documentation = "https://docs.rs/blake2"
-repository = "https://github.com/RustCrypto/hashes"
 keywords = ["crypto", "blake2", "hash", "digest"]
 categories = ["cryptography", "no-std"]
 
