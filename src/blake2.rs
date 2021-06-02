@@ -122,7 +122,9 @@ macro_rules! blake2_impl {
                     }
                     p[4] = $word::from_le_bytes(padded_salt[0..length / 2].try_into().unwrap());
                     p[5] = $word::from_le_bytes(
-                        padded_salt[length / 2..padded_salt.len()].try_into().unwrap(),
+                        padded_salt[length / 2..padded_salt.len()]
+                            .try_into()
+                            .unwrap(),
                     );
                 } else {
                     p[4] = $word::from_le_bytes(salt[0..salt.len() / 2].try_into().unwrap());
@@ -139,7 +141,9 @@ macro_rules! blake2_impl {
                     }
                     p[6] = $word::from_le_bytes(padded_persona[0..length / 2].try_into().unwrap());
                     p[7] = $word::from_le_bytes(
-                        padded_persona[length / 2..padded_persona.len()].try_into().unwrap(),
+                        padded_persona[length / 2..padded_persona.len()]
+                            .try_into()
+                            .unwrap(),
                     );
                 } else {
                     p[6] = $word::from_le_bytes(persona[0..length / 2].try_into().unwrap());
@@ -193,9 +197,9 @@ macro_rules! blake2_impl {
             /// **Warning**: The user of this method is responsible for the
             /// initialization of the vectors for the first round.
             pub fn with_state(rounds: u32, state: [$word; 8], t: u64) -> Result<Self, Error> {
-                if rounds > 12 {
-                    return Err(Error::TooManyRounds { max: max_rounds(), actual: rounds });
-                }
+                // if rounds > 12 {
+                //     return Err(Error::TooManyRounds { max: max_rounds(), actual: rounds });
+                // }
 
                 let h0 = [
                     $vec::new(state[0], state[1], state[2], state[3]),
@@ -203,7 +207,16 @@ macro_rules! blake2_impl {
                 ];
                 let nn = $bytes::to_u8() as usize;
 
-                Ok($state { m: [0; 16], h: h0, t, n: nn, t0: t, m0: [0; 16], h0, rounds })
+                Ok($state {
+                    m: [0; 16],
+                    h: h0,
+                    t,
+                    n: nn,
+                    t0: t,
+                    m0: [0; 16],
+                    h0,
+                    rounds,
+                })
             }
 
             /// Updates the hashing context with more data.
@@ -285,8 +298,8 @@ macro_rules! blake2_impl {
 
                 let mut v = [h[0], h[1], iv0(), iv1() ^ $vec::new(t0, t1, f0, f1)];
 
-                for x in 1..=self.rounds {
-                    let x = if x > 10 { x - 11 } else { x - 1 };
+                for x in 0..self.rounds {
+                    let x = x - x / 10 * 10;
                     round(&mut v, &m, &SIGMA[x as usize]);
                 }
 
