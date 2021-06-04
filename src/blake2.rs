@@ -196,18 +196,14 @@ macro_rules! blake2_impl {
             ///
             /// **Warning**: The user of this method is responsible for the
             /// initialization of the vectors for the first round.
-            pub fn with_state(rounds: u32, state: [$word; 8], t: u64) -> Result<Self, Error> {
-                // if rounds > 12 {
-                //     return Err(Error::TooManyRounds { max: max_rounds(), actual: rounds });
-                // }
-
+            pub fn with_state(rounds: u32, state: [$word; 8], t: u64) -> Self {
                 let h0 = [
                     $vec::new(state[0], state[1], state[2], state[3]),
                     $vec::new(state[4], state[5], state[6], state[7]),
                 ];
                 let nn = $bytes::to_u8() as usize;
 
-                Ok($state {
+                $state {
                     m: [0; 16],
                     h: h0,
                     t,
@@ -216,7 +212,7 @@ macro_rules! blake2_impl {
                     m0: [0; 16],
                     h0,
                     rounds,
-                })
+                }
             }
 
             /// Updates the hashing context with more data.
