@@ -28,7 +28,7 @@ fn blake2b_state() {
     ];
 
     let mut hasher = near_blake2::VarBlake2b::with_state(rounds, h, [t0, t1]);
-    hasher.update_inner(m).unwrap();
+    hasher.update_inner(m);
     hasher.compress(f0, f1);
     let res = hasher.output();
 
@@ -56,7 +56,7 @@ fn blake2s_state() {
     ];
 
     let mut hasher = near_blake2::VarBlake2s::with_state(rounds, h, [t0, t1]);
-    hasher.update_inner(m).unwrap();
+    hasher.update_inner(m);
     hasher.compress(f0, f1);
     let res = hasher.output();
 
@@ -92,7 +92,7 @@ fn blake2b_state_100r() {
     ];
 
     let mut hasher = near_blake2::VarBlake2b::with_state(rounds, h, [t0, t1]);
-    hasher.update_inner(m).unwrap();
+    hasher.update_inner(m);
     hasher.compress(f0, f1);
     let res = hasher.output();
 

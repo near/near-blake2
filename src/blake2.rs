@@ -5,7 +5,6 @@ macro_rules! blake2_impl {
         $vardoc:expr, $doc:expr,
     ) => {
         use $crate::as_bytes::AsBytes;
-        use $crate::error::Error;
         use $crate::simd::{$vec, Vector4};
 
         use core::{cmp, convert::TryInto, ops::Div};
@@ -216,7 +215,7 @@ macro_rules! blake2_impl {
             }
 
             /// Updates the hashing context with more data.
-            pub fn update_inner(&mut self, data: &[u8]) -> Result<(), Error> {
+            pub fn update_inner(&mut self, data: &[u8]) {
                 let mut rest = data;
 
                 let block = 2 * $bytes::to_usize();
@@ -231,7 +230,7 @@ macro_rules! blake2_impl {
                     copy(part, &mut self.m.as_mut_bytes()[off..]);
                     self.t[0] = match self.t[0].checked_add(part.len() as $word) {
                         Some(v) => v,
-                        None => return Err(Error::HashDataOverflow),
+                        None => 0,
                     }
                 }
 
@@ -244,7 +243,7 @@ macro_rules! blake2_impl {
                     copy(part, &mut self.m.as_mut_bytes());
                     self.t[0] = match self.t[0].checked_add(part.len() as $word) {
                         Some(v) => v,
-                        None => return Err(Error::HashDataOverflow),
+                        None => 0,
                     }
                 }
 
@@ -255,11 +254,9 @@ macro_rules! blake2_impl {
                     copy(rest, &mut self.m.as_mut_bytes());
                     self.t[0] = match self.t[0].checked_add(rest.len() as $word) {
                         Some(v) => v,
-                        None => return Err(Error::HashDataOverflow),
+                        None => 0,
                     }
                 }
-
-                Ok(())
             }
 
             #[doc(hidden)]
@@ -285,12 +282,6 @@ macro_rules! blake2_impl {
                 let m = &self.m;
                 let h = &mut self.h;
 
-                // let t0 = self.t as $word;
-                // let t1 = match $bytes::to_u8() {
-                //     64 => 0,
-                //     32 => (self.t >> 32) as $word,
-                //     _ => unreachable!(),
-                // };
                 let t0 = self.t[0];
                 let t1 = self.t[1];
 
@@ -332,7 +323,7 @@ macro_rules! blake2_impl {
 
         impl Update for $state {
             fn update(&mut self, data: impl AsRef<[u8]>) {
-                self.update_inner(data.as_ref()).unwrap();
+                self.update_inner(data.as_ref());
             }
         }
 
@@ -393,7 +384,7 @@ macro_rules! blake2_impl {
 
         impl Update for $fix_state {
             fn update(&mut self, data: impl AsRef<[u8]>) {
-                self.state.update_inner(data.as_ref()).unwrap();
+                self.state.update_inner(data.as_ref());
             }
         }
 
@@ -433,7 +424,7 @@ macro_rules! blake2_impl {
             type OutputSize = $bytes;
 
             fn update(&mut self, data: &[u8]) {
-                self.state.update_inner(data).unwrap();
+                self.state.update_inner(data);
             }
 
             fn reset(&mut self) {
