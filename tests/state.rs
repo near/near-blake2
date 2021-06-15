@@ -14,7 +14,8 @@ fn blake2b_state() {
         0x5be0cd19137e2179,
     ];
     let m = b"abc";
-    let t = 0;
+    let t0 = 0;
+    let t1 = 0;
     let f0 = !0;
     let f1 = 0;
 
@@ -26,7 +27,7 @@ fn blake2b_state() {
         0xd4, 0x0, 0x99, 0x23,
     ];
 
-    let mut hasher = near_blake2::VarBlake2b::with_state(rounds, h, t).unwrap();
+    let mut hasher = near_blake2::VarBlake2b::with_state(rounds, h, [t0, t1]);
     hasher.update_inner(m).unwrap();
     hasher.compress(f0, f1);
     let res = hasher.output();
@@ -43,7 +44,8 @@ fn blake2s_state() {
         0x5be0cd19,
     ];
     let m: &[u8; 3] = b"abc";
-    let t: u64 = 0;
+    let t0 = 0;
+    let t1 = 0;
     let f0 = !0;
     let f1 = 0;
 
@@ -53,7 +55,7 @@ fn blake2s_state() {
         0x59, 0x82,
     ];
 
-    let mut hasher = near_blake2::VarBlake2s::with_state(rounds, h, t).unwrap();
+    let mut hasher = near_blake2::VarBlake2s::with_state(rounds, h, [t0, t1]);
     hasher.update_inner(m).unwrap();
     hasher.compress(f0, f1);
     let res = hasher.output();
@@ -76,7 +78,8 @@ fn blake2b_state_100r() {
         0x5be0cd19137e2179,
     ];
     let m = b"abc";
-    let t = 0;
+    let t0 = 0;
+    let t1 = 0;
     let f0 = !0;
     let f1 = 0;
 
@@ -88,7 +91,7 @@ fn blake2b_state_100r() {
         0xef, 0x7c, 0x28, 0x45,
     ];
 
-    let mut hasher = near_blake2::VarBlake2b::with_state(rounds, h, t).unwrap();
+    let mut hasher = near_blake2::VarBlake2b::with_state(rounds, h, [t0, t1]);
     hasher.update_inner(m).unwrap();
     hasher.compress(f0, f1);
     let res = hasher.output();

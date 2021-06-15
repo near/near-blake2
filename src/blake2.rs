@@ -22,12 +22,12 @@ macro_rules! blake2_impl {
         pub struct $state {
             m: [$word; 16],
             h: [$vec; 2],
-            t: u64,
+            t: [$word; 2],
             n: usize,
 
             h0: [$vec; 2],
             m0: [$word; 16],
-            t0: u64,
+            t0: [$word; 2],
 
             rounds: u32,
         }
@@ -156,7 +156,7 @@ macro_rules! blake2_impl {
 
                 if kk > 0 {
                     copy(key, state.m.as_mut_bytes());
-                    state.t = 2 * $bytes::to_u64();
+                    state.t[0] = (2 * $bytes::to_u64()) as $word;
                 }
 
                 state.t0 = state.t;
@@ -179,10 +179,10 @@ macro_rules! blake2_impl {
                 $state {
                     m: [0; 16],
                     h: h0,
-                    t: 0,
+                    t: [0; 2],
                     n: nn,
 
-                    t0: 0,
+                    t0: [0; 2],
                     m0: [0; 16],
                     h0,
 
@@ -196,7 +196,7 @@ macro_rules! blake2_impl {
             ///
             /// **Warning**: The user of this method is responsible for the
             /// initialization of the vectors for the first round.
-            pub fn with_state(rounds: u32, state: [$word; 8], t: u64) -> Self {
+            pub fn with_state(rounds: u32, state: [$word; 8], t: [$word; 2]) -> Self {
                 let h0 = [
                     $vec::new(state[0], state[1], state[2], state[3]),
                     $vec::new(state[4], state[5], state[6], state[7]),
@@ -208,7 +208,7 @@ macro_rules! blake2_impl {
                     h: h0,
                     t,
                     n: nn,
-                    t0: t,
+                    t0: [0; 2],
                     m0: [0; 16],
                     h0,
                     rounds,
@@ -221,15 +221,15 @@ macro_rules! blake2_impl {
 
                 let block = 2 * $bytes::to_usize();
 
-                let off = self.t as usize % block;
-                if off != 0 || self.t == 0 {
+                let off = self.t[0] as usize % block;
+                if off != 0 || self.t[0] == 0 {
                     let len = cmp::min(block - off, rest.len());
 
                     let part = &rest[..len];
                     rest = &rest[part.len()..];
 
                     copy(part, &mut self.m.as_mut_bytes()[off..]);
-                    self.t = match self.t.checked_add(part.len() as u64) {
+                    self.t[0] = match self.t[0].checked_add(part.len() as $word) {
                         Some(v) => v,
                         None => return Err(Error::HashDataOverflow),
                     }
@@ -242,7 +242,7 @@ macro_rules! blake2_impl {
                     rest = &rest[part.len()..];
 
                     copy(part, &mut self.m.as_mut_bytes());
-                    self.t = match self.t.checked_add(part.len() as u64) {
+                    self.t[0] = match self.t[0].checked_add(part.len() as $word) {
                         Some(v) => v,
                         None => return Err(Error::HashDataOverflow),
                     }
@@ -253,7 +253,7 @@ macro_rules! blake2_impl {
                     self.compress(0, 0);
 
                     copy(rest, &mut self.m.as_mut_bytes());
-                    self.t = match self.t.checked_add(rest.len() as u64) {
+                    self.t[0] = match self.t[0].checked_add(rest.len() as $word) {
                         Some(v) => v,
                         None => return Err(Error::HashDataOverflow),
                     }
@@ -268,7 +268,7 @@ macro_rules! blake2_impl {
             }
 
             fn finalize_with_flag(&mut self, f1: $word) -> Output {
-                let off = self.t as usize % (2 * $bytes::to_usize());
+                let off = self.t[0] as usize % (2 * $bytes::to_usize());
                 if off != 0 {
                     self.m.as_mut_bytes()[off..].iter_mut().for_each(|b| *b = 0);
                 }
@@ -285,12 +285,14 @@ macro_rules! blake2_impl {
                 let m = &self.m;
                 let h = &mut self.h;
 
-                let t0 = self.t as $word;
-                let t1 = match $bytes::to_u8() {
-                    64 => 0,
-                    32 => (self.t >> 32) as $word,
-                    _ => unreachable!(),
-                };
+                // let t0 = self.t as $word;
+                // let t1 = match $bytes::to_u8() {
+                //     64 => 0,
+                //     32 => (self.t >> 32) as $word,
+                //     _ => unreachable!(),
+                // };
+                let t0 = self.t[0];
+                let t1 = self.t[1];
 
                 let mut v = [h[0], h[1], iv0(), iv1() ^ $vec::new(t0, t1, f0, f1)];
 
@@ -304,7 +306,7 @@ macro_rules! blake2_impl {
             }
 
             /// Returns the current count value `t`.
-            pub fn counter(&self) -> u64 {
+            pub fn counter(&self) -> [$word; 2] {
                 self.t
             }
 
