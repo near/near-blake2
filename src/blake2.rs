@@ -275,6 +275,27 @@ macro_rules! blake2_impl {
                 self.output()
             }
 
+            /// blake2 with parameters for `F` function.
+            pub fn blake2_f(
+                &mut self,
+                rounds: u32,
+                h: [$word; 8],
+                m: [$word; 16],
+                t: [$word; 2],
+                f: bool,
+            ) -> Output {
+                self.rounds = rounds;
+                self.h = [
+                    $vec::new(h[0], h[1], h[2], h[3]),
+                    $vec::new(h[4], h[5], h[6], h[7]),
+                ];
+                self.m = m;
+                self.t = t;
+                let (f0, f1) = if f { (!0, 0) } else { (0, 0) };
+                self.compress(f0, f1);
+                self.output()
+            }
+
             /// Compression `F` function.
             pub fn compress(&mut self, f0: $word, f1: $word) {
                 use $crate::consts::SIGMA;
